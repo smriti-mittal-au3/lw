@@ -1,13 +1,17 @@
 import os
 import streamlit as st
-import google.generativeai as genai
-
+import requests
 # Set Gemini API key from environment variable
-genai.configure(api_key="AIzaSyB9G2dNtdwZrvzfRfDTVpJT-k1zZgo-Huc")
+# genai.configure(api_key="AIzaSyB9G2dNtdwZrvzfRfDTVpJT-k1zZgo-Huc")
 
 # Load the Gemini model
-model = genai.GenerativeModel("gemini-pro")
+# model = genai.GenerativeModel(model_name="models/gemini-1.5-pro")
+API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
+headers = {
+    "Content-Type": "application/json",
+    "x-goog-api-key": "AIzaSyB9G2dNtdwZrvzfRfDTVpJT-k1zZgo-Huc"
+}
 # App UI
 st.set_page_config(page_title="Legal Notice Generator")
 st.title("📄 Legal Notice Generator")
@@ -24,6 +28,7 @@ with st.form("legal_notice_form"):
     submitted = st.form_submit_button("Generate Notice")
 
 # Generate notice
+print(submitted, "submitted")
 if submitted:
     with st.spinner("Drafting legal notice..."):
         prompt = f"""
@@ -40,8 +45,18 @@ if submitted:
         Please draft a legally appropriate notice in formal tone.
         """
 
-        response = model.generate_content(prompt)
-        notice_text = response.text
+        data = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ]
+        }
+
+    response = requests.post(API_URL, headers=headers, json=data)
+    print(response.status_code, response.text, "response status code and text")
+    content = response.json()
+    notice_text = content["candidates"][0]["content"]["parts"][0]["text"]
 
     st.success("Legal notice drafted!")
     st.markdown("### ✉️ Drafted Legal Notice")
